@@ -9,11 +9,10 @@ var Q = require('q');
 var mongod = require('./mongod.js');
 
 var AMAP_WEB_API_KEY = '06268f43b75ea67cbe6faa132acc4d19';
-exports.getAmapCard = function (dests, dest) {
+exports.getAmapCard = function (queryPoint, destDesc) {
     var result = '';
     var deferred = Q.defer();
     mongod.findAllBusRoute().then(function (busRoutes) {
-        var queryPoint = dests[0];
         // var queryPoint = session.userData.possiblePoints[dest.index];
         calcBusRoute(queryPoint, busRoutes).then(function (nearestStation) {
             var chosenOne = {};
@@ -24,9 +23,11 @@ exports.getAmapCard = function (dests, dest) {
                     }
                 });
             });
-            result = '去' + dest + '的最佳路线为[' + chosenOne.routeName + ']路班车 \n'
+            result = '去' + destDesc + '的最佳路线为[' + chosenOne.routeName + ']路班车 \n'
                 + '建议乘车站点为[' + nearestStation.keyword + '] \n'
-                + process.env.LINDE_BUS_URL + 'lng=' + queryPoint.location.split(',')[0] + '&lat=' + queryPoint.location.split(',')[1];
+                + process.env.LINDE_BUS_URL + 'lng=' + queryPoint.location.split(',')[0] + '&lat=' + queryPoint.location.split(',')[1] + '\n'
+                + '[如果这不是您想查询的地点,可以输入\'我要查询路线\'或者发送定位信息.]';
+
             deferred.resolve(result);
         });
     });

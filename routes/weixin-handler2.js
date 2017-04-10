@@ -3,9 +3,6 @@ require('dotenv-extended').load();
 
 var wechat = require('wechat-enterprise');
 var HashMap = require('hashmap');
-var Swagger = require('swagger-client');
-var rp = require('request-promise');
-var Q = require('q');
 const LUISClient = require("luis_sdk");
 
 var amap = require('./amap.js');
@@ -28,8 +25,10 @@ var LUISclient = LUISClient({
 
 var HELP_MSG = 'Hi! 试着通过文字问问我有关班车或者天气的问题呗! \'火车站怎么走?\', \'明天天气如何?\n或者可以直接发送您的位置信息给我.';
 
-var ENTER_STATE_PATH = 'enterPath';
+var ENTER_STATE_PLACE = 'enterPlace';
 var ENTER_STATE_CITY = 'enterCity';
+var ENTER_STATE_PATH = 'enterPath';
+
 var queryStateMap = new HashMap();
 
 var textHandler = wechat(config, function (req, res, next) {
@@ -39,15 +38,13 @@ var textHandler = wechat(config, function (req, res, next) {
     if (message.MsgType === 'location') {
         var lng = message.Location_Y;
         var lat = message.Location_X;
-        //http://139.199.197.110/lewei-bus/#!/home-api?lng=118.182171&lat=24.483892
-        var url = process.env.LINDE_BUS_URL + 'lng=' + lng + '&lat=' + lat;
-        res.reply('点击查看' + url);
+        findBusStationByLocation(lng, lat, res);
     } else if (message.MsgType === 'text') {
-        if (queryStateMap.get(userId) === ENTER_STATE_PATH) {
+        if (queryStateMap.get(userId) === ENTER_STATE_PLACE) {
             findBusStation([{entity: message.Content}], res);
             queryStateMap.remove(userId);
-        } else if (queryStateMap.get(userId) === ENTER_STATE_CITY){
-            findWheInfomtn({entity: message.Content}, res);
+        } else if (queryStateMap.get(userId) === ENTER_STATE_CITY) {
+            findWeatherInfo({entity: message.Content}, res);
             queryStateMap.remove(userId);
         } else {
             LUISclient.predict(message.Content, {
@@ -57,12 +54,12 @@ var textHandler = wechat(config, function (req, res, next) {
                         if (response.entities.length > 0 && response.entities[0].type === '地点') {
                             findBusStation(response.entities, res);
                         } else {
-                            queryStateMap.set(userId, ENTER_STATE_PATH);
+                            queryStateMap.set(userId, ENTER_STATE_PLACE);
                             res.reply(queryPath());
                         }
                     } else if (response.topScoringIntent.intent === '天气查询') {
                         if (response.entities.length > 0 && response.entities[0].type === '城市') {
-                            findWheInfomtn(response.entities[0], res);
+                            findWeatherInfo(response.entities[0], res);
                         } else {
                             queryStateMap.set(userId, ENTER_STATE_CITY);
                             res.reply(queryWher(response.entities));
@@ -71,7 +68,7 @@ var textHandler = wechat(config, function (req, res, next) {
                         if (response.entities.length > 0 && response.entities[0].type === '地点') {
                             findBusStation(response.entities, res)
                         } else if (response.entities.length > 0 && response.entities[0].type === '城市') {
-                            res.reply(findWheInfomtn(response.entities[0]));
+                            res.reply(findWeatherInfo(response.entities[0]));
                         } else {
                             res.reply(HELP_MSG);
                         }
@@ -100,11 +97,9 @@ var queryWher = function () {
 
 var findBusStation = function (entities, res) {
     amap.searchInAmap(entities).then(function (dests) {
-        var options = [];
-        dests.forEach(function (dest, index) {
-            options.push(dest.name + ' [' + dest.adname + ']');
-        });
-        amap.getAmapCard(dests, options[0]).then(function (result) {
+        var dest = dests[0];
+        var destDesc = dest.name + ' [' + dest.adname + ']';
+        amap.getAmapCard(dest, destDesc).then(function (result) {
             if (result) {
                 res.reply(result);
             }
@@ -112,7 +107,33 @@ var findBusStation = function (entities, res) {
     });
 };
 
-var findWheInfomtn = function (entity, res) {
-    return res.reply('findWheInfomtn ' + entity.entity);
+var findBusStationByLocation = function (lng, lat, res) {
+    var destDesc = '地图标记';
+    var dests = {location: lng + ',' + lat};
+    amap.getAmapCard(dests, destDesc).then(function (result) {
+        if (result) {
+            res.reply(result);
+        }
+    });
 };
+
+var findWeatherInfo = function (entity, res) {
+    whether.searchWhether(entity.entity).then(function (response) {
+        res.reply(parseWeatherInfo(response));
+    });
+};
+
+var parseWeatherInfo = function (obj) {
+    var result = '' + obj.city + '今天天气\n';
+    result += obj.week + ' ' + obj.weather + ' ' + obj.temphigh + '~' + obj.templow + '度 '+ obj.windpower + obj.winddirect + '\n';
+    result += '-------未来三天-------\n';
+    obj.daily.forEach(function(daily, index){
+        if(index !== 0 && index <= 3) {
+            result += daily.week + ' 白天: ' + daily.day.weather + ', 夜间: ' + daily.night.weather;
+            if(index !== 3) result += '\n';
+        }
+    });
+    return result;
+};
+
 module.exports = textHandler;
