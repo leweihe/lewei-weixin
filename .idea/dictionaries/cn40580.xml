@@ -1,12 +1,17 @@
 <component name="ProjectDictionaryState">
   <dictionary name="cn40580">
     <words>
+      <w>appid</w>
+      <w>appkey</w>
       <w>corpid</w>
       <w>crypto</w>
       <w>cryptor</w>
       <w>echostr</w>
       <w>encodingaeskey</w>
+      <w>infomtn</w>
+      <w>sclient</w>
       <w>weixin</w>
+      <w>wher</w>
     </words>
   </dictionary>
 </component>

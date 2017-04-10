@@ -12,16 +12,21 @@
     "directline-api-v3": "^1.0.9",
     "dotenv-extended": "^1.0.4",
     "express": "~4.14.1",
+    "express-xml-parser": "^1.0.0",
+    "hashmap": "^2.0.6",
     "jade": "~1.11.0",
     "morgan": "~1.7.0",
+    "nodejs-wechat": "0.0.8",
     "q": "^1.5.0",
     "request-promise": "latest",
     "serve-favicon": "~2.3.2",
     "swagger-client": "^2.1.18",
     "wechat": "^2.1.0",
+    "wechat-api": "^1.32.0",
     "wechat-crypto": "0.0.2",
     "wechat-enterprise": "^0.1.1",
-    "wechat-oauth": "^1.2.1"
+    "wechat-oauth": "^1.2.1",
+    "luis_sdk": "latest"
   },
   "devDependencies": {
     "request-promise": "latest"

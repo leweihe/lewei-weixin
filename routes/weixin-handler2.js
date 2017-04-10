@@ -2,6 +2,14 @@
 require('dotenv-extended').load();
 
 var wechat = require('wechat-enterprise');
+var HashMap = require('hashmap');
+var Swagger = require('swagger-client');
+var rp = require('request-promise');
+var Q = require('q');
+const LUISClient = require("luis_sdk");
+
+var amap = require('./amap.js');
+var whether = require('./whether.js');
 
 var config = {
     token: process.env.WEIXIN_TOKEN,
@@ -9,160 +17,102 @@ var config = {
     corpId: process.env.WEIXIN_CORPID
 };
 
-var textHandler = wechat(config, function (req, res, next) {
+const APPID = process.env.LUIS_ID;
+const APPKEY = process.env.LUIS_KEY;
 
-    //------------------------------------------------------------------------
-    //get message from wechat client
-    var message = req.weixin;
-
-    //=========================================================================================================
-    var touserid = message.FromUserName;
-    //send message entity
-    var messageBody = {
-        "type": "message",
-        "from": {
-            "id": message.FromUserName,
-            "FromUserName": 'WeChatUser'
-        },
-        "text": message.Content
-    };
-
-    //send message to botframework
-    sendMessageToBotframework(_tokenObject, messageBody, touserid);
-
-    //response for wechat client
-    res.reply('message send successfully, waiting for response');
-
-    //=========================================================================================================
+var LUISclient = LUISClient({
+    appId: APPID,
+    appKey: APPKEY,
+    verbose: true
 });
 
-var client = require('directline-api-v3');
-var secret = 'xFs2O9vcjSI.cwA.D3k.OSVu8Q0CQ86aqDQjqp-kwCB-66E5GfZEXWwKPW87pKk';
-var _tokenObject;
-var _conversationWss;
-var _watermark = 0;
+var HELP_MSG = 'Hi! 试着通过文字问问我有关班车或者天气的问题呗! \'火车站怎么走?\', \'明天天气如何?\n或者可以直接发送您的位置信息给我.';
 
-//noinspection JSAnnotator
-client.getTokenObject(secret).subscribe(
-    (tokenObject) => {
-    _tokenObject = tokenObject;
+var ENTER_STATE_PATH = 'enterPath';
+var ENTER_STATE_CITY = 'enterCity';
+var queryStateMap = new HashMap();
 
-//noinspection JSAnnotator
-client.initConversationStream(_tokenObject).subscribe(
-    (message) => {
-    _conversationWss = message;
-},
-(err) => console.log(err),
-    () => console.log("1.2:get conversation successfully")
-)
+var textHandler = wechat(config, function (req, res, next) {
+    var message = req.weixin;
+    var userId = message.FromUserName;
 
-//maybe need refresh token here
-setTimeout(function () {
-    refreshToken()
-}, (_tokenObject.expires_in - 30) * 1000);
-
-},
-(err) => console.log(err),
-    () => console.log('1.1:get token successfully')
-)
-//=========================================================================================================
-function refreshToken() {
-    console.log('------------------------refreshToken-----------------------------')
-    client.refTokenObject(secret).subscribe(
-        (tokenObject) => {
-        _tokenObject = tokenObject;
-},
-    (err) => console.log(err),
-        () => console.log('1.3:refresh token successfully')
-)
-}
-
-
-//send message to bot framework
-function sendMessageToBotframework(_tokenObject, messageBody, touserid) {
-    client.sendMessage(_tokenObject, messageBody).subscribe(
-        (data) => {
-        var sendMessageid = data.id;
-
-    //time out function get message from botframework
-    setTimeout(function () {
-        getmessagefrombotframework(touserid, _tokenObject, sendMessageid, _watermark)
-    }, 10000);
-},
-    (err) => {
-    },
-    () => {
-        console.log("2.2:send message to bot botframework successfully");
-    }
-);
-}
-
-//get message from bot framework function
-function getmessagefrombotframework(senduserid, tokenobject, sendmsgid, sendwatermark) {
-    //noinspection JSAnnotator
-    // client.getMessage(tokenobject, sendwatermark).subscribe(
-    //     (result) => {
-    //     _watermark = result.watermark;
-    //
-    //         //filter activities
-    //         var getResponseMessages = _.where(result.activities, { replyToId: sendmsgid });
-    //         //send message to wechat client
-    //         sendMessageToClient(senduserid, getResponseMessages);
-    //     },
-    //     (err) => {
-    //     },
-    //     () => console.log("3.1:get message from botframework successfully")
-    // )
-    sendMessageToClient(senduserid, [{text: 'abc'}]);
-}
-
-//send to message to wechat client
-function sendMessageToClient(senduserid, getResponseMessages) {
-    if (getResponseMessages) {
-
-        //forEach message
-        getResponseMessages.forEach(function (getResponseMessageItem) {
-
-            //process message from botframework
-            api.sendText(senduserid, getResponseMessageItem.text, function (err, result) {
-                if (err) {
+    if (message.MsgType === 'location') {
+        var lng = message.Location_Y;
+        var lat = message.Location_X;
+        //http://139.199.197.110/lewei-bus/#!/home-api?lng=118.182171&lat=24.483892
+        var url = process.env.LINDE_BUS_URL + 'lng=' + lng + '&lat=' + lat;
+        res.reply('点击查看' + url);
+    } else if (message.MsgType === 'text') {
+        if (queryStateMap.get(userId) === ENTER_STATE_PATH) {
+            findBusStation([{entity: message.Content}], res);
+            queryStateMap.remove(userId);
+        } else if (queryStateMap.get(userId) === ENTER_STATE_CITY){
+            findWheInfomtn({entity: message.Content}, res);
+            queryStateMap.remove(userId);
+        } else {
+            LUISclient.predict(message.Content, {
+                //On success of prediction
+                onSuccess: function (response) {
+                    if (response.topScoringIntent.intent === '路线查询') {
+                        if (response.entities.length > 0 && response.entities[0].type === '地点') {
+                            findBusStation(response.entities, res);
+                        } else {
+                            queryStateMap.set(userId, ENTER_STATE_PATH);
+                            res.reply(queryPath());
+                        }
+                    } else if (response.topScoringIntent.intent === '天气查询') {
+                        if (response.entities.length > 0 && response.entities[0].type === '城市') {
+                            findWheInfomtn(response.entities[0], res);
+                        } else {
+                            queryStateMap.set(userId, ENTER_STATE_CITY);
+                            res.reply(queryWher(response.entities));
+                        }
+                    } else if (response.topScoringIntent.intent === 'None') {
+                        if (response.entities.length > 0 && response.entities[0].type === '地点') {
+                            findBusStation(response.entities, res)
+                        } else if (response.entities.length > 0 && response.entities[0].type === '城市') {
+                            res.reply(findWheInfomtn(response.entities[0]));
+                        } else {
+                            res.reply(HELP_MSG);
+                        }
+                    } else if (response.topScoringIntent.intent === 'Help') {
+                        res.reply(HELP_MSG);
+                    } else {
+                        res.reply(HELP_MSG);
+                    }
+                },
+                //On failure of prediction
+                onFailure: function (err) {
+                    console.error(err);
                 }
             });
 
+        }
+    }
+});
+var queryPath = function () {
+    return '请告诉我地址的完整名称.';
+};
 
-            //process attachment
-            if (getResponseMessageItem.attachments) {
-                getResponseMessageItem.attachments.forEach(function (getResponseMessageAttachmentItem) {
-                    if (getResponseMessageAttachmentItem.contentType == 'application/vnd.microsoft.card.thumbnail' || getResponseMessageAttachmentItem.contentType == 'application/vnd.microsoft.card.hero')
+var queryWher = function () {
+    return '请告诉你想查询的城市名称';
+};
 
-                    //-------------upload media
-                        api.uploadMedia(getResponseMessageAttachmentItem.content.images[0].url, 'image', function (err, result) {
-                            // console.log('start upload image' + result);
-                            if (err) {
-                            }
-                            else {
-                                //-------------send image
-                                api.sendImage(senduserid, result.media_id, function (err, result) {
-                                    if (err) {
-                                    }
-                                });
-                                //-------------
-                            }
-                        });
-                    //-------------
-
-
-                    api.sendText(senduserid, getResponseMessageAttachmentItem.content.title + '\r' + getResponseMessageAttachmentItem.content.subtitle + '\r' + getResponseMessageAttachmentItem.content.text, function (err, result) {
-                        if (err) {
-                        }
-                    });
-
-                });
+var findBusStation = function (entities, res) {
+    amap.searchInAmap(entities).then(function (dests) {
+        var options = [];
+        dests.forEach(function (dest, index) {
+            options.push(dest.name + ' [' + dest.adname + ']');
+        });
+        amap.getAmapCard(dests, options[0]).then(function (result) {
+            if (result) {
+                res.reply(result);
             }
         });
+    });
+};
 
-
-    }
-}
-
+var findWheInfomtn = function (entity, res) {
+    return res.reply('findWheInfomtn ' + entity.entity);
+};
 module.exports = textHandler;

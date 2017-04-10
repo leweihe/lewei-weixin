@@ -9,7 +9,7 @@ var bodyParser = require('body-parser');
 // var index = require('./routes/index');
 // var users = require('./routes/users');
 // var weixin = require('./routes/weixin');
-var weixinHandler = require('./routes/weixin-handler');
+var weixinHandler = require('./routes/weixin-handler2');
 
 var app = express();
 

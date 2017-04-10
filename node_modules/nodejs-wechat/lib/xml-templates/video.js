@@ -1,0 +1,13 @@
+module.exports = 
+'<xml>' +
+  '<ToUserName><![CDATA[{ToUserName}]]></ToUserName>' +
+  '<FromUserName><![CDATA[{FromUserName}]]></FromUserName>' +
+  '<CreateTime>{CreateTime}</CreateTime>' +
+  '<MsgType><![CDATA[video]]></MsgType>' +
+  '<Video>' +
+  '<MediaId><![CDATA[{MediaId}]]></MediaId>' +
+  '<Title><![CDATA[{Title}]]></Title>' +
+  '<Description><![CDATA[{Description}]]></Description>' +
+  '<ThumbMediaId><![CDATA[{ThumbMediaId}]]></ThumbMediaId>' +
+  '</Video>' +
+'</xml>';
