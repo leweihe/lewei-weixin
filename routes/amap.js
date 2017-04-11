@@ -18,7 +18,6 @@ exports.getAmapCard = function (queryPoint, destDesc) {
         // var queryPoint = session.userData.possiblePoints[dest.index];
         calcBusRoute(queryPoint, busRoutes).then(function (nearestStation) {
             if (nearestStation) {
-
                 var chosenOne = {};
                 busRoutes.forEach(function (route) {
                     route.stations.forEach(function (station) {
@@ -82,47 +81,60 @@ var calcBusRoute = function (queryPoint, busRoutes) {
 var getAllDistance = function (queryPoint, stations) {
     var deferred = Q.defer();
     var destination = queryPoint.location;
+    var originsArr = [];
+
+    var result = [];
+
+    if (stations.length > 100) {
+
+    }
     var origins = '';
-    stations.forEach(function (station) {
+    stations.forEach(function (station, index) {
+        if (index / 100 === 1) {
+            originsArr.push(origins);
+            origins = '';
+        }
         origins += station.lng;
         origins += ',';
         origins += station.lat;
         origins += '|';
     });
-    var apiData = {
-        key: AMAP_WEB_API_KEY,
-        origins: origins,
-        destination: destination,
-        output: 'json'
-    };
-    var content = qs.stringify(apiData);
-    var options = {
-        hostname: 'restapi.amap.com',
-        path: '/v3/distance?' + content,
-        method: 'GET'
-    };
-    var result = [];
-    var req = http.request(options, function (res) {
-        var responseText = '';
-        res.on('data', function (data) {
-            responseText += data;
+    originsArr.push(origins);
+    originsArr.forEach(function (ori) {
+        var apiData = {
+            key: AMAP_WEB_API_KEY,
+            origins: ori,
+            destination: destination,
+            output: 'json'
+        };
+        var content = qs.stringify(apiData);
+        var options = {
+            hostname: 'restapi.amap.com',
+            path: '/v3/distance?' + content,
+            method: 'GET'
+        };
+        var req = http.request(options, function (res) {
+            var responseText = '';
+            res.on('data', function (data) {
+                responseText += data;
+            });
+            res.on('end', function () {
+                var response = JSON.parse(responseText);
+                if (response.results) {
+                    response.results.forEach(function (point) {
+                        result.push(point)
+                    });
+                }
+                deferred.resolve(result);
+            });
+
         });
-        res.on('end', function () {
-            var response = JSON.parse(responseText);
-            if (response.results) {
-                response.results.forEach(function (point) {
-                    result.push(point)
-                });
-            }
-            deferred.resolve(result);
+        req.on('error', function (e) {
+            console.log('problem with request: ' + e.message);
         });
+        req.end();
 
     });
-    req.on('error', function (e) {
-        console.log('problem with request: ' + e.message);
-    });
-    req.end();
-
     return deferred.promise;
 };
 
