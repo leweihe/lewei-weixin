@@ -52,8 +52,7 @@ var textHandler = wechat(config, function (req, res, next) {
             findWeatherInfo({entity: message.Content}, res);
             queryStateMap.remove(userId);
         } else if (queryStateMap.get(userId) === ENTER_STATE_PATH) {
-            findPathInfo({entity: message.Content}, res);
-            queryStateMap.remove(userId);
+            findPathInfo({entity: message.Content}, res, userId);
         } else {
             LUISclient.predict(message.Content, {
                 //On success of prediction
@@ -146,7 +145,7 @@ var findWeatherInfo = function (entity, res) {
     });
 };
 
-var findPathInfo = function (entity, res) {
+var findPathInfo = function (entity, res, userId) {
     if(!Number(entity.entity)) {
         res.reply('请输入正确的序号[数字]');
     } else {
@@ -160,6 +159,7 @@ var findPathInfo = function (entity, res) {
                 }
             });
             msg += '以上...';
+            queryStateMap.remove(userId);
             res.reply(msg);
         });
     }
@@ -167,7 +167,7 @@ var findPathInfo = function (entity, res) {
 
 var parseWeatherInfo = function (obj) {
     var result = '' + obj.city + '今天\n';
-    result += obj.weather + ', 当前气温: '+ obj.temp + '度, ' + obj.temphigh + '~' + obj.templow + '度, \n';
+    result += obj.weather + ', 当前气温: '+ obj.temp + '度, 今天' + obj.temphigh + '~' + obj.templow + '度, \n';
     result += '----------未来三天----------\n';
     obj.daily.forEach(function (daily, index) {
         if (index !== 0 && index <= 3) {
