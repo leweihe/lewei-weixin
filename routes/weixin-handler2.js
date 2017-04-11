@@ -24,7 +24,11 @@ var LUISclient = LUISClient({
     verbose: true
 });
 
-var HELP_MSG = 'Hi! 试着通过文字问问我有关班车或者天气的问题呗! \'火车站怎么走?\', \'明天天气如何?\n或者直接发送位置信息.';
+var HELP_MSG = 'Hi! 试着通过文字问问我有关班车或者天气的问题呗! \n' +
+    '     \'火车站怎么走?\',\n' +
+    '     \'厦门天气如何?\',\n' +
+    '     \'班车查询\'/\'班车信息\',\n' +
+    '也可以试试发送你的位置信息.';
 
 var ENTER_STATE_PLACE = 'enterPlace';
 var ENTER_STATE_CITY = 'enterCity';
@@ -69,12 +73,8 @@ var textHandler = wechat(config, function (req, res, next) {
                             res.reply(queryWher());
                         }
                     } else if (response.topScoringIntent.intent === '班车查询') {
-                        if (response.entities.length > 0 && response.entities[0].type === '班车') {
-                            findPathInfo(response.entities[0], res);
-                        } else {
-                            queryStateMap.set(userId, ENTER_STATE_PATH);
-                            queryPath(res);
-                        }
+                        queryStateMap.set(userId, ENTER_STATE_PATH);
+                        queryPath(res);
                     } else if (response.topScoringIntent.intent === 'None') {
                         if (response.entities.length > 0 && response.entities[0].type === '地点') {
                             findBusStation(response.entities, res)
@@ -109,11 +109,11 @@ var queryWher = function () {
 
 var queryPath = function (res) {
     mongod.findAllBusRoute().then(function (routes) {
-        var msg = '';
+        var msg = '为您列出一下班车信息,';
         routes.forEach(function (route, index) {
             msg += '班车 ' + (index + 1) + ': ' + route.description + '\n';
         });
-        msg += '输入对应班车序号查询具体信息';
+        msg += '输入对应班车[序号]查询具体站点信息.';
         res.reply(msg);
     });
 };
