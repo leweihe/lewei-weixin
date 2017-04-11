@@ -109,7 +109,7 @@ var queryWher = function () {
 
 var queryPath = function (res) {
     mongod.findAllBusRoute().then(function (routes) {
-        var msg = '为您列出一下班车信息,';
+        var msg = '为您列出一下班车信息,\n';
         routes.forEach(function (route, index) {
             msg += '班车 ' + (index + 1) + ': ' + route.description + '\n';
         });
