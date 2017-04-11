@@ -68,7 +68,7 @@ var textHandler = wechat(config, function (req, res, next) {
                         if (response.entities.length > 0 && response.entities[0].type === '地点') {
                             findBusStation(response.entities, res)
                         } else if (response.entities.length > 0 && response.entities[0].type === '城市') {
-                            res.reply(findWeatherInfo(response.entities[0]));
+                            res.reply(findWeatherInfo(response.entities[0], res));
                         } else {
                             res.reply(HELP_MSG);
                         }
