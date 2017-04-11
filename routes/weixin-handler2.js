@@ -23,7 +23,7 @@ var LUISclient = LUISClient({
     verbose: true
 });
 
-var HELP_MSG = 'Hi! 试着通过文字问问我有关班车或者天气的问题呗! \'火车站怎么走?\', \'明天天气如何?\n或者可以直接发送您的位置信息给我.';
+var HELP_MSG = 'Hi! 试着通过文字问问我有关班车或者天气的问题呗! \'火车站怎么走?\', \'明天天气如何?\n或者直接发送位置信息.';
 
 var ENTER_STATE_PLACE = 'enterPlace';
 var ENTER_STATE_CITY = 'enterCity';
@@ -68,7 +68,7 @@ var textHandler = wechat(config, function (req, res, next) {
                         if (response.entities.length > 0 && response.entities[0].type === '地点') {
                             findBusStation(response.entities, res)
                         } else if (response.entities.length > 0 && response.entities[0].type === '城市') {
-                            res.reply(findWeatherInfo(response.entities[0], res));
+                            findWeatherInfo(response.entities[0], res);
                         } else {
                             res.reply(HELP_MSG);
                         }
@@ -124,13 +124,13 @@ var findWeatherInfo = function (entity, res) {
 };
 
 var parseWeatherInfo = function (obj) {
-    var result = '' + obj.city + '今天天气\n';
-    result += obj.week + ' ' + obj.weather + ' ' + obj.temphigh + '~' + obj.templow + '度 '+ obj.windpower + obj.winddirect + '\n';
+    var result = '' + obj.city + '今天\n';
+    result += obj.weather + ' ' + obj.temphigh + '~' + obj.templow + '度 ' + obj.windpower + obj.winddirect + '\n';
     result += '-------未来三天-------\n';
-    obj.daily.forEach(function(daily, index){
-        if(index !== 0 && index <= 3) {
+    obj.daily.forEach(function (daily, index) {
+        if (index !== 0 && index <= 3) {
             result += daily.week + ' 白天: ' + daily.day.weather + ', 夜间: ' + daily.night.weather;
-            if(index !== 3) result += '\n';
+            if (index !== 3) result += '\n';
         }
     });
     return result;

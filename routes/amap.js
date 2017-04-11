@@ -8,6 +8,8 @@ var qs = require('querystring');
 var Q = require('q');
 var mongod = require('./mongod.js');
 
+var HELP_MSG = '[若这不是您查询的地点,可以输入\'查询路线\'或者直接发送定位信息.]';
+
 var AMAP_WEB_API_KEY = '06268f43b75ea67cbe6faa132acc4d19';
 exports.getAmapCard = function (queryPoint, destDesc) {
     var result = '';
@@ -15,19 +17,27 @@ exports.getAmapCard = function (queryPoint, destDesc) {
     mongod.findAllBusRoute().then(function (busRoutes) {
         // var queryPoint = session.userData.possiblePoints[dest.index];
         calcBusRoute(queryPoint, busRoutes).then(function (nearestStation) {
-            var chosenOne = {};
-            busRoutes.forEach(function (route) {
-                route.stations.forEach(function (station) {
-                    if (station === nearestStation) {
-                        chosenOne = route;
-                    }
-                });
-            });
-            result = '去' + destDesc + '的最佳路线为[' + chosenOne.routeName + ']路班车 \n'
-                + '建议乘车站点为[' + nearestStation.keyword + '] \n'
-                + process.env.LINDE_BUS_URL + 'lng=' + queryPoint.location.split(',')[0] + '&lat=' + queryPoint.location.split(',')[1] + '\n'
-                + '[如果这不是您想查询的地点,可以输入\'我要查询路线\'或者发送定位信息.]';
+            if (nearestStation) {
 
+                var chosenOne = {};
+                busRoutes.forEach(function (route) {
+                    route.stations.forEach(function (station) {
+                        if (station === nearestStation) {
+                            chosenOne = route;
+                        }
+                    });
+                });
+                if (nearestStation.keyword.indexOf('林德') >= 0) {
+                    result = '您距离终点较近,可以选择直接步行至' + nearestStation.keyword;
+                } else {
+                    result = '去' + destDesc + '的最佳路线为[' + chosenOne.routeName + ']路班车 \n'
+                        + '建议乘车站点为[' + nearestStation.keyword + ']\n'
+                        + process.env.LINDE_BUS_URL + 'lng=' + queryPoint.location.split(',')[0] + '&lat=' + queryPoint.location.split(',')[1] + '\n'
+                        + HELP_MSG;
+                }
+            } else {
+                result = destDesc + '附近没有合适的站点,不建议搭乘班车.\n' + HELP_MSG;
+            }
             deferred.resolve(result);
         });
     });
@@ -47,7 +57,7 @@ var calcBusRoute = function (queryPoint, busRoutes) {
         var shortestDist = 0;
         var tmpDist = 0;
         distResults.forEach(function (dist, index) {
-            if (index == 0) {
+            if (index === 0) {
                 shortestDist = parseFloat(dist.distance);
             }
             tmpDist = parseFloat(dist.distance);
@@ -57,8 +67,13 @@ var calcBusRoute = function (queryPoint, busRoutes) {
             }
         });
 
-        nearestStation = stations[shortestInd];
-        console.log('the shortest one is ' + shortestDist + ' and the index is ' + shortestInd);
+        if (shortestDist > 3000) {
+            nearestStation = null;
+            console.log('the path to the nearest station ' + stations[shortestInd].keyword + ' is more than 3000m suggest not to take linde bus');
+        } else {
+            nearestStation = stations[shortestInd];
+            console.log('the shortest one is ' + shortestDist + ' and the index is ' + shortestInd);
+        }
         deferred.resolve(nearestStation);
     });
     return deferred.promise;
