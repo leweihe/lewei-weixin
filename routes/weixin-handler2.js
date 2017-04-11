@@ -7,6 +7,7 @@ const LUISClient = require("luis_sdk");
 
 var amap = require('./amap.js');
 var whether = require('./whether.js');
+var mongod = require('./mongod');
 
 var config = {
     token: process.env.WEIXIN_TOKEN,
@@ -46,6 +47,9 @@ var textHandler = wechat(config, function (req, res, next) {
         } else if (queryStateMap.get(userId) === ENTER_STATE_CITY) {
             findWeatherInfo({entity: message.Content}, res);
             queryStateMap.remove(userId);
+        } else if (queryStateMap.get(userId) === ENTER_STATE_PATH) {
+            findPathInfo({entity: message.Content}, res);
+            queryStateMap.remove(userId);
         } else {
             LUISclient.predict(message.Content, {
                 //On success of prediction
@@ -55,14 +59,21 @@ var textHandler = wechat(config, function (req, res, next) {
                             findBusStation(response.entities, res);
                         } else {
                             queryStateMap.set(userId, ENTER_STATE_PLACE);
-                            res.reply(queryPath());
+                            res.reply(queryStation());
                         }
                     } else if (response.topScoringIntent.intent === '天气查询') {
                         if (response.entities.length > 0 && response.entities[0].type === '城市') {
                             findWeatherInfo(response.entities[0], res);
                         } else {
                             queryStateMap.set(userId, ENTER_STATE_CITY);
-                            res.reply(queryWher(response.entities));
+                            res.reply(queryWher());
+                        }
+                    } else if (response.topScoringIntent.intent === '班车查询') {
+                        if (response.entities.length > 0 && response.entities[0].type === '班车') {
+                            findPathInfo(response.entities[0], res);
+                        } else {
+                            queryStateMap.set(userId, ENTER_STATE_PATH);
+                            queryPath(res);
                         }
                     } else if (response.topScoringIntent.intent === 'None') {
                         if (response.entities.length > 0 && response.entities[0].type === '地点') {
@@ -82,17 +93,29 @@ var textHandler = wechat(config, function (req, res, next) {
                 onFailure: function (err) {
                     console.error(err);
                 }
-            });
-
+            })
         }
+        ;
+
     }
 });
-var queryPath = function () {
+var queryStation = function () {
     return '请告诉我地址的完整名称.';
 };
 
 var queryWher = function () {
     return '请告诉你想查询的城市名称';
+};
+
+var queryPath = function (res) {
+    mongod.findAllBusRoute().then(function (routes) {
+        var msg = '';
+        routes.forEach(function (route, index) {
+            msg += '班车 ' + (index + 1) + ': ' + route.description + '\n';
+        });
+        msg += '输入对应班车序号查询具体信息';
+        res.reply(msg);
+    });
 };
 
 var findBusStation = function (entities, res) {
@@ -120,6 +143,21 @@ var findBusStationByLocation = function (lng, lat, res) {
 var findWeatherInfo = function (entity, res) {
     whether.searchWhether(entity.entity).then(function (response) {
         res.reply(parseWeatherInfo(response));
+    });
+};
+
+var findPathInfo = function (entity, res) {
+    mongod.findAllBusRoute().then(function (routes) {
+        var msg = '';
+        routes.forEach(function (route, index) {
+            if (String(index + 1) === entity.entity) {
+                route.stations.forEach(function (station, index) {
+                    msg += (index + 1) + '. ' + station.keyword + '\n';
+                });
+            }
+        });
+        msg += '以上...';
+        res.reply(msg);
     });
 };
 
