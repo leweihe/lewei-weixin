@@ -147,24 +147,28 @@ var findWeatherInfo = function (entity, res) {
 };
 
 var findPathInfo = function (entity, res) {
-    mongod.findAllBusRoute().then(function (routes) {
-        var msg = '';
-        routes.forEach(function (route, index) {
-            if (String(index + 1) === entity.entity) {
-                route.stations.forEach(function (station, index) {
-                    msg += (index + 1) + '. ' + station.keyword + '\n';
-                });
-            }
+    if(!Number(entity.entity)) {
+        res.reply('请输入正确的序号[数字]');
+    } else {
+        mongod.findAllBusRoute().then(function (routes) {
+            var msg = '';
+            routes.forEach(function (route, index) {
+                if (String(index + 1) === entity.entity) {
+                    route.stations.forEach(function (station, index) {
+                        msg += (index + 1) + '. ' + station.keyword + '\n';
+                    });
+                }
+            });
+            msg += '以上...';
+            res.reply(msg);
         });
-        msg += '以上...';
-        res.reply(msg);
-    });
+    }
 };
 
 var parseWeatherInfo = function (obj) {
     var result = '' + obj.city + '今天\n';
-    result += obj.weather + ' ' + obj.temphigh + '~' + obj.templow + '度 ' + obj.windpower + obj.winddirect + '\n';
-    result += '-------未来三天-------\n';
+    result += obj.weather + ', 当前气温: '+ obj.temp + '度, ' + obj.temphigh + '~' + obj.templow + '度, \n';
+    result += '----------未来三天----------\n';
     obj.daily.forEach(function (daily, index) {
         if (index !== 0 && index <= 3) {
             result += daily.week + ' 白天: ' + daily.day.weather + ', 夜间: ' + daily.night.weather;
