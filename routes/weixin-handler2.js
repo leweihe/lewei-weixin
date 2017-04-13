@@ -69,7 +69,7 @@ var textHandler = wechat(config, function (req, res, next) {
                             findWeatherInfo(response.entities[0], res);
                         } else {
                             //queryStateMap.set(userId, ENTER_STATE_CITY);
-                            findWeatherInfo('厦门', res);//search xiamen by default
+                            findWeatherInfo({entity:'厦门'}, res);//search xiamen by default
                         }
                     } else if (response.topScoringIntent.intent === '班车查询') {
                         queryStateMap.set(userId, ENTER_STATE_PATH);
@@ -167,7 +167,7 @@ var findPathInfo = function (entity, res, userId) {
 
 var parseWeatherInfo = function (obj) {
     var result = '' + obj.city + '今天\n';
-    result += obj.weather + ', 当前气温: '+ obj.temp + '度, ' + obj.windpower + obj.winddirect;
+    result += obj.weather + ', 当前气温: '+ obj.temp + '度, ' + obj.windpower + obj.winddirect + '\n';
     result += '----------未来三天----------\n';
     obj.daily.forEach(function (daily, index) {
         if (index !== 0 && index <= 3) {
