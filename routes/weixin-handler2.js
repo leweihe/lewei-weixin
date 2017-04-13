@@ -68,8 +68,8 @@ var textHandler = wechat(config, function (req, res, next) {
                         if (response.entities.length > 0 && response.entities[0].type === '城市') {
                             findWeatherInfo(response.entities[0], res);
                         } else {
-                            queryStateMap.set(userId, ENTER_STATE_CITY);
-                            res.reply(queryWeather());
+                            //queryStateMap.set(userId, ENTER_STATE_CITY);
+                            findWeatherInfo('厦门', res);//search xiamen by default
                         }
                     } else if (response.topScoringIntent.intent === '班车查询') {
                         queryStateMap.set(userId, ENTER_STATE_PATH);
