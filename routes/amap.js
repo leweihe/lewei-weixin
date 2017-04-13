@@ -8,7 +8,7 @@ var qs = require('querystring');
 var Q = require('q');
 var mongod = require('./mongod.js');
 
-var HELP_MSG = '若这不是您查询的地点,可以输入[查询路线]或者直接发送[定位信息].';
+var HELP_MSG = '若这不是您查询的地点, 可以输入[查询路线]或直接发送[定位信息]';
 
 var AMAP_WEB_API_KEY = '06268f43b75ea67cbe6faa132acc4d19';
 exports.getAmapCard = function (queryPoint, destDesc) {
