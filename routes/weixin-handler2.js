@@ -167,7 +167,7 @@ var findPathInfo = function (entity, res, userId) {
 
 var parseWeatherInfo = function (obj) {
     var result = '' + obj.city + '今天\n';
-    result += obj.weather + ', 当前气温: '+ obj.temp + '度, 全天气温: ' + obj.tempHigh + '~' + obj.tempLow + '度, \n';
+    result += obj.weather + ', 当前气温: '+ obj.temp + '度, ' + obj.windpower + obj.winddirect;
     result += '----------未来三天----------\n';
     obj.daily.forEach(function (daily, index) {
         if (index !== 0 && index <= 3) {
