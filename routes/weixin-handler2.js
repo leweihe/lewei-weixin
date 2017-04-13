@@ -69,7 +69,7 @@ var textHandler = wechat(config, function (req, res, next) {
                             findWeatherInfo(response.entities[0], res);
                         } else {
                             queryStateMap.set(userId, ENTER_STATE_CITY);
-                            res.reply(queryWher());
+                            res.reply(queryWeather());
                         }
                     } else if (response.topScoringIntent.intent === '班车查询') {
                         queryStateMap.set(userId, ENTER_STATE_PATH);
@@ -102,7 +102,7 @@ var queryStation = function () {
     return '请告诉我地址的完整名称.';
 };
 
-var queryWher = function () {
+var queryWeather = function () {
     return '请告诉你想查询的城市名称';
 };
 
@@ -167,7 +167,7 @@ var findPathInfo = function (entity, res, userId) {
 
 var parseWeatherInfo = function (obj) {
     var result = '' + obj.city + '今天\n';
-    result += obj.weather + ', 当前气温: '+ obj.temp + '度, 全天气温: ' + obj.temphigh + '~' + obj.templow + '度, \n';
+    result += obj.weather + ', 当前气温: '+ obj.temp + '度, 全天气温: ' + obj.tempHigh + '~' + obj.tempLow + '度, \n';
     result += '----------未来三天----------\n';
     obj.daily.forEach(function (daily, index) {
         if (index !== 0 && index <= 3) {
