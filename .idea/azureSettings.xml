@@ -4,6 +4,9 @@
     <option name="appInsights" value="rO0ABXVyAEtbTGNvbS5taWNyb3NvZnQuYXBwbGljYXRpb25pbnNpZ2h0cy5wcmVmZXJlbmNlLkFwcGxpY2F0aW9uSW5zaWdodHNSZXNvdXJjZTvCzxEP0C2HbAIAAHhwAAAAAA==" />
     <option name="properties">
       <map>
+        <entry key="com.microsoft.intellij.AzureSubscriptions" value="{}" />
+        <entry key="com.microsoft.intellij.AzureUserInfo" value="null" />
+        <entry key="com.microsoft.intellij.AzureUserSubscriptions" value="{}" />
         <entry key="com.microsoft.intellij.PluginVersion" value="0.1.1" />
       </map>
     </option>

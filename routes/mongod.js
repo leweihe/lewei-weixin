@@ -12,7 +12,7 @@ exports.findAllBusRoute = function () {
         if (err) throw err;
         console.log('mongo db connected.');
         var collection = db.collection('busRouteDTO');
-        var whereStr = {};
+        var whereStr = {tripFlag: 'GO'};//只查询单向结果
         var queryResult = [];
         collection.find(whereStr, function (error, cursor) {
             cursor.each(function (error, doc) {

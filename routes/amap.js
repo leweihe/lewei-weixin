@@ -8,7 +8,7 @@ var qs = require('querystring');
 var Q = require('q');
 var mongod = require('./mongod.js');
 
-var HELP_MSG = '[若这不是您查询的地点,可以输入\'查询路线\'或者直接发送定位信息.]';
+var HELP_MSG = '若这不是您查询的地点,可以输入[查询路线]或者直接发送[定位信息].';
 
 var AMAP_WEB_API_KEY = '06268f43b75ea67cbe6faa132acc4d19';
 exports.getAmapCard = function (queryPoint, destDesc) {
@@ -20,18 +20,22 @@ exports.getAmapCard = function (queryPoint, destDesc) {
             if (nearestStation) {
                 var chosenOne = {};
                 busRoutes.forEach(function (route) {
-                    route.stations.forEach(function (station) {
-                        if (station === nearestStation) {
-                            chosenOne = route;
-                        }
-                    });
+                    if(route.stations) {
+                        route.stations.forEach(function (station) {
+                            if (station === nearestStation) {
+                                chosenOne = route;
+                            }
+                        });
+                    }
                 });
                 if (nearestStation.keyword.indexOf('林德') >= 0) {
                     result = '您距离终点较近,可以选择直接步行至' + nearestStation.keyword;
                 } else {
-                    result = '去' + destDesc + '的最佳路线为[' + chosenOne.routeName + ']路班车 \n'
-                        + '建议乘车站点为[' + nearestStation.keyword + ']\n'
-                        + process.env.LINDE_BUS_URL + 'lng=' + queryPoint.location.split(',')[0] + '&lat=' + queryPoint.location.split(',')[1] + '\n'
+                    var url = process.env.LINDE_BUS_URL + 'lng=' + queryPoint.location.split(',')[0] + '&lat=' + queryPoint.location.split(',')[1]
+                    + '&routeId=' + chosenOne._id.toString() + '&stationId=' + nearestStation._id.toString();
+                    // var url = 'abc.html';
+                    result = destDesc + '的最佳路线为[' + chosenOne.routeName + ']路班车 \n'
+                        + '建议乘车站点为[<a href="' + url + '">' + nearestStation.keyword + '</a>]\n'
                         + HELP_MSG;
                 }
             } else {
@@ -47,9 +51,11 @@ var calcBusRoute = function (queryPoint, busRoutes) {
     var nearestStation = {};
     var stations = [];
     busRoutes.forEach(function (route, index) {
-        route.stations.forEach(function (station) {
-            stations.push(station);
-        });
+        if(route.stations) {
+            route.stations.forEach(function (station) {
+                stations.push(station);
+            });
+        }
     });
     getAllDistance(queryPoint, stations).then(function (distResults) {
         var shortestInd = 0;
