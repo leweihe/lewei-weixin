@@ -24,11 +24,13 @@ var LUISclient = LUISClient({
     verbose: true
 });
 
-var HELP_MSG = 'Hi! 试着通过文字问问我有关班车或者天气的问题呗! \n' +
-    '     \'火车站怎么走?\',\n' +
-    '     \'厦门天气如何?\',\n' +
-    '     \'班车查询\'/\'班车信息\',\n' +
-    '也可以试试发送你的位置信息.';
+var HELP_MSG = 'Hi, 小伙伴, 你想了解有关班车的问题, 或者明天的天气如何吗?' +
+    '那么我想我能够帮到你, 你可以问我: \n' +
+    '    \'我想查询班车\'' +
+    '    \'我想知道文体中心怎么走\'\n' +
+    '    \'我迫切的想查询路线\'\n' +
+    '    \'明天我要带雨伞吗\'\n' +
+    '或者发送您的[位置信息]给我[可爱].';
 
 var ENTER_STATE_PLACE = 'enterPlace';
 var ENTER_STATE_CITY = 'enterCity';
@@ -98,12 +100,9 @@ var textHandler = wechat(config, function (req, res, next) {
 
     }
 });
+
 var queryStation = function () {
     return '请告诉我地址的完整名称.';
-};
-
-var queryWeather = function () {
-    return '请告诉你想查询的城市名称';
 };
 
 var queryPath = function (res) {
