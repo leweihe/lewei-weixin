@@ -110,7 +110,7 @@ var queryPath = function (res) {
         var msg = '为您列出一下班车信息,\n';
         routes.forEach(function (route, index) {
             var url = process.env.LINDE_MAP_URL + '&routeId=' + route._id.toString();
-            msg += '班车 [' + (index + 1) + ']: <a href="'+ url +'">' + route.description + '</a>' + route.routeName + '\n' ;
+            msg += '班车 [' + (index + 1) + ']: <a href="'+ url +'">' + route.description + '</a>\n' ;
         });
         msg += '输入对应班车[序号]查询具体站点信息.';
         res.reply(msg);
@@ -154,7 +154,7 @@ var findPathInfo = function (entity, res, userId) {
             routes.forEach(function (route, index) {
                 if (String(index + 1) === entity.entity) {
                     route.stations.forEach(function (station, index) {
-                        var url = process.env.LINDE_BUS_URL + '&routeId' + route._id.toString() + '&stationId=' + station._id.toString()
+                        var url = process.env.LINDE_BUS_URL + '&routeId=' + route._id.toString() + '&stationId=' + station._id.toString()
                             // + '&showMap=true'
                         ;
                         msg += (index + 1) + '. <a href="' + url + '">' + station.keyword + '</a>\n';
