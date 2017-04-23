@@ -109,7 +109,7 @@ var queryPath = function (res) {
     mongod.findAllBusRoute().then(function (routes) {
         var msg = '为您列出一下班车信息,\n';
         routes.forEach(function (route, index) {
-            var url = process.env.LINDE_MAP_URL + '&routeId=' + route._id.toString();
+            var url = process.env.LINDE_BUS_URL + '&routeId=' + route._id.toString();
             msg += '班车 [' + (index + 1) + ']: <a href="'+ url +'">' + route.description + '</a>\n' ;
         });
         msg += '输入对应班车[序号]查询具体站点信息.';
